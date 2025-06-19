@@ -4,64 +4,25 @@ logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
-
-# Diagnostic reports
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
 
 # Dependency directories
 node_modules/
+bower_components/
 jspm_packages/
-bower_components
 
-# Cache / build directories
-.cache
-.parcel-cache
-coverage
-.nyc_output
+# Build / cache / coverage
 build/
-dist
-.next
-.nuxt
-.vuepress/dist
-.svelte-kit/
-**/.vitepress/dist
-**/.vitepress/cache
-.docusaurus
-.serverless/
-.fusebox/
-.dynamodb/
-.firebase/
-
-# Optional caches
-.npm
-.eslintcache
-.stylelintcache
-.node_repl_history
-.yarn-integrity
-.pnp.*
-.yarn/*
+dist/
+.cache/
+.parcel-cache/
+coverage/
+.nyc_output/
 
 # Environment files
 .env
 .env.*
 !.env.example
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Misc
 .DS_Store
-.tern-port
 .vscode-test
-
-# Logs for specific tools
-vite.config.js.timestamp-*
-vite.config.ts.timestamp-*
