@@ -77,18 +77,24 @@ export default function Conversation({ selectedUser }) {
     const text = newMessage;
     setNewMessage("");
 
+    // Optimistically update UI
     setMessages((prev) => [
       ...prev,
       { id: Math.random(), text, sender: auth.currentUser.uid, createdAt: new Date(), fade: false },
     ]);
 
-    await addDoc(collection(db, "messages"), {
-      text,
-      sender: auth.currentUser.uid,
-      chatId,
-      clientCreatedAt: new Date(),
-      createdAt: serverTimestamp(),
-    });
+    try {
+      const docRef = await addDoc(collection(db, "messages"), {
+        text,
+        sender: auth.currentUser.uid,
+        chatId,
+        clientCreatedAt: new Date(),
+        createdAt: serverTimestamp(),
+      });
+      console.log("Message successfully saved in Firebase with ID:", docRef.id);
+    } catch (error) {
+      console.error("Error saving message to Firebase:", error);
+    }
   };
 
   const formatTime = (date) => {
