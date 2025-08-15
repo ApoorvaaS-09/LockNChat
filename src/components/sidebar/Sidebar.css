@@ -1,0 +1,44 @@
+.sidebar ul li {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  gap: 10px;
+}
+
+.sidebar ul li.selected {
+  background-color: #007bff;
+  color: white;
+  border-radius: 4px;
+}
+
+.sidebar ul li:hover {
+  cursor: pointer;
+  background-color: #e0e0e0;
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid #ccc;
+}
+
+.sidebar-header button {
+  padding: 5px 10px;
+  cursor: pointer;
+}

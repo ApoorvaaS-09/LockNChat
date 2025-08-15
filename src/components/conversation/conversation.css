@@ -1,153 +1,125 @@
-.conversation-messages{
-    overflow-y: auto;
-    height: 67vh;
-    padding: 0vh,1vh,0vh,1vh;
-    padding-bottom: 1vh;
-}
-
-.input-container{
-    display: flex;
-    align-items: center;
-    justify-content:space-between;
-    overflow: auto;
-}
-
-.input-container button{
-    height:37px;
-    margin-top: 10vh;
-    margin-right: 0.5vh;
-    width: 5vw;
-    min-width: 50px;
-    font-size: 16px;
-}
-.input-container button:hover{
-    background-color: silver;
-}
-
-.input-message input{
-    margin-top: 8vh;
-    width: 47.5vw;
-    min-width: 300px;
-    height: 30px;
-    font-size: 16px;
-    margin-left: 0.5vh;
-    float: left;
-}
-
-.receiver{
-    overflow-y: hidden;
-    overflow-x: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.message-container {
+.conversation-container {
   display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.messages-container {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.message {
+  max-width: 70%;
+  padding: 10px 14px;
   margin: 6px 0;
+  border-radius: 20px;
+  position: relative;
+  word-wrap: break-word;
+  display: inline-block;
+  transition: opacity 1s ease-out;
 }
 
-.message-content {
-  background-color: #2196f3;
+.message.sent {
+  background-color: #dcf8c6;
+  align-self: flex-end;
+}
+
+.message.received {
+  background-color: #fff;
+  align-self: flex-start;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.fade-out {
+  opacity: 0;
+}
+
+.timestamp {
+  font-size: 0.65rem;
+  color: gray;
+  margin-top: 2px;
+}
+
+.message-input-container {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #ddd;
+}
+
+.message-input-container input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+.message-input-container button {
+  margin-left: 10px;
+  padding: 10px 20px;
+  border-radius: 20px;
+  border: none;
+  background-color: #4caf50;
   color: white;
-  padding: 8px 12px;
-  border-radius: 12px;
-  max-width: 60%;       /* Prevent long messages from stretching full width */
-  word-wrap: break-word; /* Wrap long words */
+  cursor: pointer;
 }
 
-.chatscreen {
-  display: flex;           /* Layout side-by-side */
-  width: 100%;
-  background-color: rgb(16, 123, 230);
-  color: white;
+.message-input-container button:hover {
+  background-color: #45a049;
 }
 
-.chat {
-  width: 65%;
-  height: 90vh;
-  background-color: rgb(66, 65, 65);
+.conversation-placeholder {
+  padding: 20px;
+  text-align: center;
+  color: gray;
+}
+
+/* Sidebar styling */
+.sidebar {
+  width: 250px;
+  border-right: 1px solid #ddd;
   display: flex;
   flex-direction: column;
+  height: 100vh;
 }
 
-.encryption-elements {
-  width: 35%;               /* Use the remaining space */
-  background-color: #61def7;
-  color: white;
-  padding: 2vh;
-  height: 90vh;
-  font-size: 16px;
+.sidebar-header {
+  padding: 10px;
   display: flex;
-  flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  box-sizing: border-box;
+  border-bottom: 1px solid #ddd;
 }
 
-
-.chat p{
-    text-align: center;
-    font-size: 18px;
-}
-
-
-
-form{
-    margin-left: 2vw;
-}
-
-input{
-    width:20vw;
-    height: 20px;
-    font-size: 16px;
-}
-
-.nochat{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height:87vh;
-    background-color:rgb(66, 65, 65);
-
-}
-
-.nochat p{
-    font-size: 28px;
-}
-
-@media only screen and (max-width:480px){
-    .chat{
-        min-width: 365px;
-    }
-    .input-message input{
-        min-width: 610px;
-    }
-    .encryption-elements input{
-        min-width:300px
-    }
-}
-
-/* Align messages sent by the current user (right) */
-.message-container.self {
-  justify-content: flex-end;
-}
-
-/* Align messages received from others (left) */
-.message-container.other {
-  justify-content: flex-start;
-}
-
-/* Make sent messages blue and received white */
-.message-container.self .message-content {
-  background-color: #2196f3; /* blue bubble */
+.sidebar-header button {
+  padding: 5px 10px;
+  border-radius: 10px;
+  border: none;
+  background-color: #f44336;
   color: white;
-  border-top-right-radius: 0;
-  text-align: right;
+  cursor: pointer;
 }
 
-.message-container.other .message-content {
-  background-color: #e5e5ea; /* iMessage-style gray bubble */
-  color: black;
-  border-top-left-radius: 0;
-  text-align: left;
+.sidebar-header button:hover {
+  background-color: #d32f2f;
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar li {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+}
+
+.sidebar li:hover {
+  background-color: #f0f0f0;
 }

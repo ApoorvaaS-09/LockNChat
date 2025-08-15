@@ -1,26 +1,21 @@
-//Setting firebase for our chat-app
-// Import the functions you need from the SDKs you need
+// Import Firebase SDK functions
 import { initializeApp } from "firebase/app";
-import {getAuth} from "firebase/auth";
-import {getFirestore} from "firebase/firestore";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
-// Your web app's Firebase configuration
+// Your LockNChat Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyBQVjbGtt83Um74VdU7qfJuGZF4FoQZjpo",
-  authDomain: "chat-app-56d6e.firebaseapp.com",
-  projectId: "chat-app-56d6e",
-  storageBucket: "chat-app-56d6e.firebasestorage.app",
-  messagingSenderId: "1056163662157",
-  appId: "1:1056163662157:web:3024aa8ce70fe300e50f04",
-  measurementId: "G-RFKX523V91"
+  apiKey: "AIzaSyDfOg08m4KFZtF9l4orI484CvMaVlnQzWw",
+  authDomain: "locknchat-b32f6.firebaseapp.com",
+  projectId: "locknchat-b32f6",
+  storageBucket: "locknchat-b32f6.firebasestorage.app",
+  messagingSenderId: "416670420615",
+  appId: "1:416670420615:web:25d8f2b4a58d4043ecf222"
 };
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-const db = getFirestore();
-const auth = getAuth();
-
-export {auth, db};
+// Export auth & firestore for use in the app
+export const auth = getAuth(app);
+export const db = getFirestore(app);

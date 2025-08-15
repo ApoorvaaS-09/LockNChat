@@ -1,213 +1,132 @@
-import React, { useRef, useState, useEffect } from "react";
-import { doc, getDoc, updateDoc, setDoc, onSnapshot } from "firebase/firestore";
-import { db } from "../../firebase";
+import React, { useState, useEffect, useRef } from "react";
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  addDoc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { auth, db } from "../../firebase";
 import "./conversation.css";
 
-function escapeHTML(str) {
-  return str.replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-}
-
-function sanitizeInput(str) {
-  if (typeof str !== "string") return "";
-  const trimmed = str.trim().substring(0, 100);
-  return trimmed.replace(/[\u0000-\u001F\u007F-\u009F]/g, "");
-}
-
-export default function Conversation({ receiver, user }) {
-  const [conversationId, setConversationId] = useState(null);
+export default function Conversation({ selectedUser }) {
   const [messages, setMessages] = useState([]);
-  const [secretKey, setSecretKey] = useState("");
-  const [dhprime, setDhPrime] = useState("");
-  const [dhgenerator, setDhGenerator] = useState("");
+  const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef(null);
 
-  const currentMessage = useRef(null);
-  const chatBodyRef = useRef(null);
-  const CryptoJS = require("crypto-js");
+  const scrollToBottom = () =>
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  useEffect(scrollToBottom, [messages]);
 
-  const sendMessage = async () => {
-    const rawMessage = currentMessage.current.value?.trim();
-    if (!rawMessage) return;
-
-    const safeMessage = sanitizeInput(rawMessage);
-    const sharedsecret = secretKey.toString();
-    const ciphertext = CryptoJS.AES.encrypt(safeMessage, sharedsecret).toString();
-
-    const myMessage = {
-      message: ciphertext,
-      uid: user.uid,
-      timestamp: Date.now(), // Timestamp for expiration
-    };
-
-    const conversationRef = doc(db, "conversations", conversationId);
-    const docSnap = await getDoc(conversationRef);
-
-    if (docSnap.exists()) {
-      const docData = docSnap.data();
-      const freshMessages = docData.messages.filter((m) => Date.now() - m.timestamp <= 30000); // 30 seconds
-      await updateDoc(conversationRef, {
-        messages: [...freshMessages, myMessage],
-      });
-    } else {
-      await setDoc(conversationRef, {
-        messages: [myMessage],
-      });
+  // Listen to messages
+  useEffect(() => {
+    if (!selectedUser || !auth.currentUser) {
+      setMessages([]);
+      return;
     }
 
-    currentMessage.current.value = "";
-  };
+    const chatId = [auth.currentUser.uid, selectedUser.uid].sort().join("_");
 
-  const setUpSecretKey = async () => {
-    if (!receiver || !user) return;
+    const q = query(
+      collection(db, "messages"),
+      where("chatId", "==", chatId),
+      orderBy("clientCreatedAt", "asc")
+    );
 
-    const dhRef = doc(db, "dhparameters", "dh");
-    const dhSnap = await getDoc(dhRef);
-    if (dhSnap.exists()) {
-      const dhData = dhSnap.data();
-      setDhPrime(dhData.prime);
-      setDhGenerator(dhData.generator);
-    }
-
-    const senderRef = doc(db, "users", user.uid);
-    const senderSnap = await getDoc(senderRef);
-    const senderData = senderSnap.data();
-    const senderPriv = senderData.privkey;
-
-    const receiverRef = doc(db, "users", receiver.uid);
-    const receiverSnap = await getDoc(receiverRef);
-    const receiverData = receiverSnap.data();
-    const receiverPub = receiverData.pubkey;
-
-    const shared = power(receiverPub, senderPriv, dhprime);
-    setSecretKey(shared);
-
-    const id = receiver.uid > user.uid ? receiver.uid + user.uid : user.uid + receiver.uid;
-    setConversationId(id);
-  };
-
-  useEffect(() => {
-    setUpSecretKey();
-  }, [receiver, user]);
-
-  useEffect(() => {
-    if (!conversationId || !secretKey) return;
-
-    const sharedsecret = secretKey.toString();
-    const unsub = onSnapshot(doc(db, "conversations", conversationId), (doc) => {
-      const data = doc.data();
-      if (!data?.messages) return setMessages([]);
-
-      const decryptedMessages = data.messages
-        .filter((m) => Date.now() - m.timestamp <= 60000) // 60 seconds
-        .map((m) => {
-          try {
-            const bytes = CryptoJS.AES.decrypt(m.message, sharedsecret);
-            const plaintext = bytes.toString(CryptoJS.enc.Utf8);
-            return { ...m, message: plaintext };
-          } catch {
-            return { ...m, message: "[DECRYPTION FAILED]" };
-          }
-        });
-
-      setMessages(decryptedMessages);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const msgs = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        text: doc.data().text,
+        sender: doc.data().sender,
+        createdAt: doc.data().clientCreatedAt?.toDate() || new Date(),
+        fade: false,
+      }));
+      setMessages(msgs);
     });
 
-    return unsub;
-  }, [conversationId, secretKey]);
+    return () => unsubscribe();
+  }, [selectedUser]);
 
-  useEffect(() => {
-    if (!chatBodyRef.current) return;
-    chatBodyRef.current.scrollTop = chatBodyRef.current.scrollHeight;
-  }, [messages]);
-
+  // Remove messages from UI after 2 minutes with fade (check every 2 seconds)
   useEffect(() => {
     const interval = setInterval(() => {
+      const now = new Date();
       setMessages((prev) =>
-        prev.filter((m) => Date.now() - m.timestamp <= 30000)
+        prev.map((msg) =>
+          now - msg.createdAt >= 2 * 60 * 1000 ? { ...msg, fade: true } : msg
+        )
       );
-    }, 5000); // Check every 5 seconds
-
+    }, 2000); // check every 2 seconds
     return () => clearInterval(interval);
   }, []);
 
-  const handleEnterKeyPressDown = (e) => {
-    if ((e.key === "Enter" || e.code === "Enter") && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
+  useEffect(() => {
+    // actually remove faded messages after 1s fade
+    const timer = setTimeout(() => {
+      setMessages((prev) => prev.filter((msg) => !msg.fade));
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [messages]);
+
+  const handleSend = async () => {
+    if (!selectedUser || newMessage.trim() === "") return;
+
+    const chatId = [auth.currentUser.uid, selectedUser.uid].sort().join("_");
+    const text = newMessage;
+    setNewMessage("");
+
+    setMessages((prev) => [
+      ...prev,
+      { id: Math.random(), text, sender: auth.currentUser.uid, createdAt: new Date(), fade: false },
+    ]);
+
+    await addDoc(collection(db, "messages"), {
+      text,
+      sender: auth.currentUser.uid,
+      chatId,
+      clientCreatedAt: new Date(),
+      createdAt: serverTimestamp(),
+    });
   };
 
+  const formatTime = (date) => {
+    const h = date.getHours().toString().padStart(2, "0");
+    const m = date.getMinutes().toString().padStart(2, "0");
+    return `${h}:${m}`;
+  };
+
+  if (!selectedUser)
+    return <div className="conversation-placeholder">Select a user to start chatting</div>;
+
   return (
-  <div className="chatscreen">
-    {receiver ? (
-      <>
-        <div className="chat">
-          {/* Chat title */}
-          <p title={receiver.email} className="receiver">
-            Conversation with {receiver.email}
-          </p>
+    <div className="conversation-container">
+      <h3>Chat with {selectedUser.displayName || selectedUser.email}</h3>
 
-          {/* Message list */}
-          <div className="conversation-messages" ref={chatBodyRef}>
-            {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className="message-container"
-                style={{
-                  justifyContent:
-                    msg.uid === user.uid ? "flex-end" : "flex-start",
-                }}
-              >
-                <div className="message-content">
-                  {escapeHTML(msg.message)}
-                </div>
-              </div>
-            ))}
+      <div className="messages-container">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`message ${msg.sender === auth.currentUser.uid ? "sent" : "received"} ${msg.fade ? "fade-out" : ""}`}
+          >
+            <div>{msg.text}</div>
+            <div className="timestamp">{formatTime(msg.createdAt)}</div>
           </div>
-
-          {/* Input area */}
-          <div className="input-container">
-            <div className="input-message">
-              <input
-                placeholder="Enter message"
-                ref={currentMessage}
-                onKeyDown={handleEnterKeyPressDown}
-              />
-            </div>
-            <button onClick={sendMessage}>Go</button>
-          </div>
-        </div>
-
-        {/* Encryption Sidebar */}
-        <div className="encryption-elements">
-          <h3>🔒 Encrypted Chat</h3>
-          <p>Your messages are end-to-end encrypted.</p>
-          <p>⏳ Expiry in: <span id="expiry-timer">60</span> seconds</p>
-        </div>
-      </>
-    ) : (
-      <div className="nochat">
-        <p>Pick someone to talk to.</p>
+        ))}
+        <div ref={messagesEndRef} />
       </div>
-    )}
-  </div>
-);
 
-}
-
-// Modular exponentiation
-function power(a, b, p) {
-  let res = 0;
-  a = a % p;
-  while (b > 0) {
-    if (b % 2 === 1) {
-      res = (res + a) % p;
-    }
-    a = (a * 2) % p;
-    b = Math.floor(b / 2);
-  }
-  return res % p;
+      <div className="message-input-container">
+        <input
+          type="text"
+          placeholder="Type a message..."
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+        />
+        <button onClick={handleSend}>Send</button>
+      </div>
+    </div>
+  );
 }
